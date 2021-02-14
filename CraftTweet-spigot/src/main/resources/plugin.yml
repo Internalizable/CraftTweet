@@ -1,0 +1,10 @@
+name: CraftTweet
+version: ${project.version}
+main: me.internalizable.crafttweet.CraftTweetSpigot
+api-version: 1.16
+description: Links your Twitter account with your Minecraft account.
+commands:
+  link:
+    description: Links to your twitter account
+    usage: /<command>
+    permission: link.use
