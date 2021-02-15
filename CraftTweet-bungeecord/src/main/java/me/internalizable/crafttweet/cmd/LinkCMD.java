@@ -1,48 +1,56 @@
 package me.internalizable.crafttweet.cmd;
 
-import me.internalizable.crafttweet.CraftTweetSpigot;
+import com.imaginarycode.minecraft.redisbungee.RedisBungee;
+import me.internalizable.crafttweet.CraftTweetBungeeCord;
 import me.internalizable.crafttweet.api.TwitterAPI;
-
 import me.internalizable.crafttweet.cache.ITwitterCache;
 import me.internalizable.crafttweet.config.IConfig;
 import me.internalizable.crafttweet.config.TwitterMessages;
 import me.internalizable.crafttweet.player.TwitterPlayer;
-import me.internalizable.crafttweet.queue.WaitingQueue;
+import me.internalizable.crafttweet.redis.RedisServerCache;
 import me.internalizable.crafttweet.utils.StaticUtils;
-import org.bukkit.Bukkit;
-import org.bukkit.command.Command;
-import org.bukkit.command.CommandExecutor;
-import org.bukkit.command.CommandSender;
-import org.bukkit.entity.Player;
+import net.md_5.bungee.api.CommandSender;
+import net.md_5.bungee.api.chat.BaseComponent;
+import net.md_5.bungee.api.chat.ClickEvent;
+import net.md_5.bungee.api.chat.ComponentBuilder;
+import net.md_5.bungee.api.chat.TextComponent;
+import net.md_5.bungee.api.connection.ProxiedPlayer;
+import net.md_5.bungee.api.plugin.Command;
 
-public class LinkCommand implements CommandExecutor {
+import java.util.UUID;
 
-    private CraftTweetSpigot instance;
+public class LinkCMD extends Command {
+
+    private CraftTweetBungeeCord instance;
     private IConfig config;
     private ITwitterCache twitterCache;
 
-    public LinkCommand(CraftTweetSpigot instance, IConfig config, ITwitterCache twitterCache) {
+    public LinkCMD(CraftTweetBungeeCord instance, IConfig config, ITwitterCache twitterCache) {
+        super("link");
         this.instance = instance;
         this.config = config;
         this.twitterCache = twitterCache;
     }
 
     @Override
-    public boolean onCommand(CommandSender sender, Command cmd, String label, String[] args) {
+    public void execute(CommandSender sender, String[] args) {
 
-        if (sender instanceof Player) {
-            Player player = (Player) sender;
+        if (sender instanceof ProxiedPlayer) {
+            ProxiedPlayer player = (ProxiedPlayer) sender;
 
             if(!player.hasPermission("link.use")) {
                 player.sendMessage(TwitterMessages.NO_PERMS.build());
-                return true;
+                return;
             }
 
             if(args.length == 0) {
-
                 TwitterPlayer searchedPlayer = twitterCache.getActivePlayer(player.getUniqueId());
 
+                System.out.println("Command used");
+
                 if(searchedPlayer != null) {
+                    System.out.println("not null player");
+
                     TwitterAPI twitterAPI = new TwitterAPI(searchedPlayer, config, twitterCache);
 
                     twitterAPI.getScreenName().thenAccept(name -> {
@@ -51,11 +59,11 @@ public class LinkCommand implements CommandExecutor {
                         player.sendMessage(information.build());
                     });
 
-                    return true;
+                    return;
                 }
 
                 player.sendMessage(TwitterMessages.INFORMATION_FALSE.build());
-                return true;
+                return;
             }
 
             if(args.length == 1) {
@@ -66,7 +74,7 @@ public class LinkCommand implements CommandExecutor {
 
                     if(twitterPlayer != null) {
                         player.sendMessage(TwitterMessages.ERROR_ALREADY_LINKED.build());
-                        return true;
+                        return;
                     }
 
                     TwitterPlayer requestPlayer = new TwitterPlayer(player.getUniqueId(), config, twitterCache);
@@ -78,10 +86,13 @@ public class LinkCommand implements CommandExecutor {
                         requestMessage.registerPlaceholder("%url%", url);
                         requestMessage.registerPlaceholder("%player%", player.getName());
 
-                        player.sendMessage(requestMessage.build());
+                        TextComponent textComponent = new TextComponent(TextComponent.fromLegacyText(requestMessage.build()));
+                        textComponent.setClickEvent(new ClickEvent(ClickEvent.Action.OPEN_URL, url));
+
+                        player.sendMessage(textComponent);
                     });
 
-                    return true;
+                    return;
                 }
             }
 
@@ -91,21 +102,21 @@ public class LinkCommand implements CommandExecutor {
 
                     if(config.isCallback()) {
                         //todo send player message that he can't confirm because there's no pin
-                        return true;
+                        return;
                     }
 
                     TwitterPlayer runningPlayer = twitterCache.getActivePlayer(player.getUniqueId());
 
                     if(runningPlayer != null) {
                         player.sendMessage(TwitterMessages.ERROR_ALREADY_LINKED.build());
-                        return true;
+                        return;
                     }
 
                     TwitterPlayer waitingPlayer = twitterCache.getWaitingPlayer(player.getUniqueId());
 
                     if(waitingPlayer == null) {
                         player.sendMessage(TwitterMessages.ERROR_NO_REQUEST.build());
-                        return true;
+                        return;
                     }
 
                     TwitterAPI twitterAPI = new TwitterAPI(waitingPlayer, config, twitterCache);
@@ -116,39 +127,57 @@ public class LinkCommand implements CommandExecutor {
                         } else {
                             waitingPlayer.insertPlayer(accessToken.getToken(), accessToken.getTokenSecret());
 
-                            twitterCache.addActivePlayer(waitingPlayer);
-
                             player.sendMessage(TwitterMessages.SUCCESFUL_LINK.build());
                         }
 
                     });
 
-                    return true;
+                    return;
                 }
             }
 
             player.sendMessage(TwitterMessages.UNKNOWN_FORMAT.build());
-            return true;
+            return;
         }
 
         if(args.length >= 3) {
             if(args[0].equalsIgnoreCase("tweet")) {
+
+                System.out.print("tweet");
+
                 String playerName = args[1];
                 String tweetMessage = getArgs(args, 2);
 
-                if(Bukkit.getPlayer(playerName) != null) {
-                    Player player = Bukkit.getPlayer(playerName);
+                if(config.isRedisBungee()) {
+
+                    UUID id = RedisBungee.getApi().getUuidFromName(playerName);
+
+                    if(RedisBungee.getApi().isPlayerOnline(id)) {
+                        TwitterPlayer twitterPlayer = twitterCache.getActivePlayer(id);
+
+                        if(twitterPlayer != null) {
+                            StaticUtils.addToQueue(twitterPlayer, tweetMessage);
+                        }
+                    }
+
+                    return;
+                }
+
+                if(instance.getProxy().getPlayer(playerName) != null) {
+                    ProxiedPlayer player = instance.getProxy().getPlayer(playerName);
 
                     TwitterPlayer twitterPlayer = twitterCache.getActivePlayer(player.getUniqueId());
 
                     if(twitterPlayer != null) {
                         StaticUtils.addToQueue(twitterPlayer, tweetMessage);
+
+                        System.out.println("queued");
                     }
                 }
             }
         }
 
-        return true;
+        return;
     }
 
 

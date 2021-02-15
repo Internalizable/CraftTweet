@@ -6,13 +6,16 @@ import me.internalizable.crafttweet.cache.ITwitterCache;
 import me.internalizable.crafttweet.config.IConfig;
 import me.internalizable.crafttweet.sql.MySQL;
 import me.internalizable.crafttweet.sql.prep.PredefinedStmts;
+import twitter4j.Twitter;
 import twitter4j.TwitterFactory;
 import twitter4j.auth.AccessToken;
+import twitter4j.auth.RequestToken;
 
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Timestamp;
+import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 
 public class TwitterPlayer {
@@ -22,13 +25,16 @@ public class TwitterPlayer {
 
     private ITwitterCache twitterCache;
 
-    public TwitterPlayer(String uuid, IConfig config, ITwitterCache twitterCache) {
+    private TwitterFactory twitterFactory;
 
+    @Getter @Setter
+    private Twitter twitterClient;
+
+    public TwitterPlayer(UUID uuid, IConfig config, ITwitterCache twitterCache) {
         this.twitterCache = twitterCache;
 
         data = TwitterData.builder()
                 .UUID(uuid)
-                .twitterFactory(new TwitterFactory())
                 .oauth_p("")
                 .oauth_s("")
                 .twitter(false)
@@ -36,13 +42,14 @@ public class TwitterPlayer {
                 .latestTimestamp(new Timestamp(System.currentTimeMillis()))
                 .build();
 
-        data.setTwitterClient(data.getTwitterFactory().getInstance());
-        data.getTwitterClient().setOAuthConsumer(config.getPublicKey(), config.getPrivateKey());
+        twitterFactory = new TwitterFactory();
+        twitterClient = twitterFactory.getInstance();
+        twitterClient.setOAuthConsumer(config.getPublicKey(), config.getPrivateKey());
     }
 
     public void init() {
         PredefinedStmts selectionStmt = PredefinedStmts.SELECTION;
-        selectionStmt.registerPlaceholder("%uuid%", data.getUUID());
+        selectionStmt.registerPlaceholder("%uuid%", data.getUUID().toString());
 
         CompletableFuture.runAsync(() -> {
             try {
@@ -54,7 +61,7 @@ public class TwitterPlayer {
                     data.setOauth_s(rs.getString("oauths"));
 
                     data.setTwitter(true);
-                    data.getTwitterClient().setOAuthAccessToken(new AccessToken(rs.getString("oauthp"), rs.getString("oauths")));
+                    twitterClient.setOAuthAccessToken(new AccessToken(rs.getString("oauthp"), rs.getString("oauths")));
 
                     twitterCache.addActivePlayer(this);
 
@@ -69,7 +76,7 @@ public class TwitterPlayer {
 
     public void insertPlayer(String oauthp, String oauths) {
         PredefinedStmts insertionStmt = PredefinedStmts.INSERTION;
-        insertionStmt.registerPlaceholder("%uuid%", data.getUUID());
+        insertionStmt.registerPlaceholder("%uuid%", data.getUUID().toString());
         insertionStmt.registerPlaceholder("%oauthp%", oauthp);
         insertionStmt.registerPlaceholder("%oauths%", oauths);
 
@@ -82,7 +89,9 @@ public class TwitterPlayer {
                 data.setOauth_s(oauths);
                 data.setTwitter(true);
 
-                data.getTwitterClient().setOAuthAccessToken(new AccessToken(oauthp, oauths));
+                twitterClient.setOAuthAccessToken(new AccessToken(oauthp, oauths));
+
+                twitterCache.addActivePlayer(this);
             } catch (SQLException exception) {
                 exception.printStackTrace();
             }
@@ -92,7 +101,7 @@ public class TwitterPlayer {
 
     public void deletePlayer() {
         PredefinedStmts deletionStmt = PredefinedStmts.DELETION;
-        deletionStmt.registerPlaceholder("%uuid%", data.getUUID());
+        deletionStmt.registerPlaceholder("%uuid%", data.getUUID().toString());
 
         CompletableFuture.runAsync(() -> {
             try {
@@ -103,7 +112,7 @@ public class TwitterPlayer {
                 data.setOauth_s("");
                 data.setTwitter(false);
 
-                data.setTwitterClient(null);
+                twitterClient = null;
             } catch (SQLException exception) {
                 exception.printStackTrace();
             }

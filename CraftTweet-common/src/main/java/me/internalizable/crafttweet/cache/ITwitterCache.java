@@ -11,11 +11,11 @@ import java.util.*;
 
 public abstract class ITwitterCache {
 
-    public TwitterPlayer getActivePlayer(String id) {
+    public TwitterPlayer getActivePlayer(UUID id) {
         return StaticUtils.getCache().stream().filter(player -> player.getData().getUUID().equals(id)).findAny().orElse(null);
     }
 
-    public TwitterPlayer getWaitingPlayer(String id) {
+    public TwitterPlayer getWaitingPlayer(UUID id) {
         return StaticUtils.getWaitingCache().stream().filter(player -> player.getData().getUUID().equals(id)).findAny().orElse(null);
     }
 
@@ -23,7 +23,7 @@ public abstract class ITwitterCache {
         StaticUtils.getWaitQueue().add(queuedTweet);
     }
 
-    public int getPlayerLimit(String id) {
+    public int getPlayerLimit(UUID id) {
         return StaticUtils.getCache().stream().filter(player -> player.getData().getUUID().equals(id)).findAny().map(player -> player.getData().getLimitCount()).orElse(0);
     }
 
@@ -33,7 +33,7 @@ public abstract class ITwitterCache {
 
     public void removeQueuedTweet(int index) { StaticUtils.getRunningQueue().remove(index); }
 
-    public Timestamp getTimestamp(String id) {
+    public Timestamp getTimestamp(UUID id) {
         return StaticUtils.getCache().stream().filter(player -> player.getData().getUUID().equals(id)).findAny().map(player -> player.getData().getLatestTimestamp()).orElse(null);
     }
 

@@ -8,13 +8,14 @@ import twitter4j.TwitterFactory;
 import twitter4j.auth.RequestToken;
 
 import java.sql.Timestamp;
+import java.util.UUID;
 
 @Builder
 @Getter
 @Setter
 
 public class TwitterData {
-    private String UUID;
+    private UUID UUID;
 
     private String oauth_p;
 
@@ -22,13 +23,11 @@ public class TwitterData {
 
     private boolean twitter;
 
-    private TwitterFactory twitterFactory;
-
-    private Twitter twitterClient;
-
-    private RequestToken requestToken;
-
     private int limitCount;
 
     private Timestamp latestTimestamp;
+
+    private String token_public;
+
+    private String token_secret;
 }

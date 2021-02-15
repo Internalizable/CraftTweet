@@ -22,10 +22,10 @@ public class CraftTweetJoin implements Listener {
 
     @EventHandler
     public void onPlayerJoin(AsyncPlayerPreLoginEvent event) {
-        TwitterPlayer searchedPlayer = twitterCache.getActivePlayer(event.getUniqueId().toString());
+        TwitterPlayer searchedPlayer = twitterCache.getActivePlayer(event.getUniqueId());
 
         if(searchedPlayer == null) {
-            TwitterPlayer twitterPlayer = new TwitterPlayer(event.getUniqueId().toString(), config, twitterCache);
+            TwitterPlayer twitterPlayer = new TwitterPlayer(event.getUniqueId(), config, twitterCache);
             twitterPlayer.init();
         }
     }

@@ -29,14 +29,11 @@ public class OAuthReciever {
 
         if(twitterPlayer != null && config.isCallbackServer()) {
             CompletableFuture.runAsync(() -> {
-                twitterPlayer.getData().getTwitterClient().setOAuthAccessToken(new AccessToken(recievedRequest.getOauth_token(), recievedRequest.getOauth_token_secret()));
-                twitterPlayer.insertPlayer(recievedRequest.getOauth_token(), recievedRequest.getOauth_token_secret());
+                TwitterPlayer newPlayer = new TwitterPlayer(recievedRequest.getUuid(), config, twitterCache);
+                newPlayer.getTwitterClient().setOAuthAccessToken(new AccessToken(recievedRequest.getOauth_token(), recievedRequest.getOauth_token_secret()));
+                newPlayer.insertPlayer(recievedRequest.getOauth_token(), recievedRequest.getOauth_token_secret());
 
-                twitterCache.addActivePlayer(twitterPlayer);
-
-                UUID userID = UUID.fromString(recievedRequest.getUuid());
-
-                utils.sendPlayerMessage(userID, TwitterMessages.SUCCESFUL_LINK.build());
+                utils.sendPlayerMessage(recievedRequest.getUuid(), TwitterMessages.SUCCESFUL_LINK.build());
             });
         }
     }

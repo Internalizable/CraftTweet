@@ -55,7 +55,7 @@ public final class CraftTweetSpigot extends JavaPlugin {
             resetTime--;
 
             if(resetTime <= 0) {
-                resetTime = (int) TimeUnit.MINUTES.toSeconds(1);
+                resetTime = (int) TimeUnit.HOURS.toSeconds(1);
                 StaticUtils.getCache().forEach(twitterPlayer -> twitterPlayer.getData().setLimitCount(0));
 
                 WaitingQueue queueRuntime = new WaitingQueue(twitterCache);
@@ -70,15 +70,14 @@ public final class CraftTweetSpigot extends JavaPlugin {
 
         },0L,20L);
 
-        /**
-         * Check if callback urls are enabled.
-         */
+        if(config.isCallback()) {
+            JedisPool jedisPool = new JedisPool(new JedisPoolConfig(), "localhost", 6379);
 
-        JedisPool jedisPool = new JedisPool(new JedisPoolConfig(), "localhost", 6379);
+            RedisManager redisManager = new RedisManager(jedisPool);
+            redisManager.getRedisBus().registerListener(new OAuthReciever(config, twitterCache, bukkitUtils));
+            redisManager.getRedisBus().init();
+        }
 
-        RedisManager redisManager = new RedisManager(jedisPool);
-        redisManager.getRedisBus().registerListener(new OAuthReciever(config, twitterCache, bukkitUtils));
-        redisManager.getRedisBus().init();
     }
 
     @Override

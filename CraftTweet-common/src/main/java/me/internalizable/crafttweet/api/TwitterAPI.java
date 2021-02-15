@@ -28,12 +28,22 @@ public class TwitterAPI {
         return CompletableFuture.supplyAsync(()-> {
             try {
 
-                String callbackURL = config.getCallbackURL().replace("%uuid%", twitterPlayer.getData().getUUID());
+                RequestToken requestToken;
 
-                RequestToken requestToken = twitterPlayer.getData().getTwitterClient().getOAuthRequestToken(callbackURL);
-                twitterPlayer.getData().setRequestToken(requestToken);
+                if(config.isCallback()) {
+                    String callbackURL = config.getCallbackURL().replace("%uuid%", twitterPlayer.getData().getUUID().toString());
+                    requestToken = twitterPlayer.getTwitterClient().getOAuthRequestToken(callbackURL);
+                } else {
+                    requestToken = twitterPlayer.getTwitterClient().getOAuthRequestToken();
+                }
+
+
+                twitterPlayer.getData().setToken_public(requestToken.getToken());
+                twitterPlayer.getData().setToken_secret(requestToken.getTokenSecret());
+
                 twitterCache.addWaitingPlayer(twitterPlayer);
-                return requestToken.getAuthenticationURL();
+
+                return requestToken.getAuthorizationURL();
             } catch (TwitterException exception) {
                 exception.printStackTrace();
             }
@@ -47,9 +57,9 @@ public class TwitterAPI {
 
             try {
                 if (pin.length() > 0) {
-                    accessToken = twitterPlayer.getData().getTwitterClient().getOAuthAccessToken(twitterPlayer.getData().getRequestToken(), pin);
+                    accessToken = twitterPlayer.getTwitterClient().getOAuthAccessToken(new RequestToken(twitterPlayer.getData().getToken_public(), twitterPlayer.getData().getToken_secret()), pin);
                 } else {
-                    accessToken = twitterPlayer.getData().getTwitterClient().getOAuthAccessToken();
+                    accessToken = twitterPlayer.getTwitterClient().getOAuthAccessToken();
                 }
 
             } catch (TwitterException te) {
@@ -65,7 +75,7 @@ public class TwitterAPI {
     public CompletableFuture<String> getScreenName() {
         return CompletableFuture.supplyAsync(() -> {
             try {
-                return twitterPlayer.getData().getTwitterClient().getScreenName();
+                return twitterPlayer.getTwitterClient().getScreenName();
             } catch (TwitterException exc) {
                 exc.printStackTrace();
             }
@@ -87,7 +97,7 @@ public class TwitterAPI {
 
         return CompletableFuture.supplyAsync( ()-> {
             try {
-                Status status = twitterPlayer.getData().getTwitterClient().updateStatus(tweet.replaceAll(":thumbs_up:", "\uD83D\uDC4D"));
+                Status status = twitterPlayer.getTwitterClient().updateStatus(tweet.replaceAll(":thumbs_up:", "\uD83D\uDC4D"));
                 twitterCache.addToLimitCount(twitterPlayer, 1);
 
                 return StaticUtils.handleRateLimit(status.getRateLimitStatus());

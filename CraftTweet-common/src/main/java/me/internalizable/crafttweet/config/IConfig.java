@@ -18,6 +18,9 @@ public class IConfig {
     private String privateKey;
 
     @Getter
+    private boolean redisBungee;
+
+    @Getter
     private boolean callback;
 
     @Getter
@@ -54,6 +57,7 @@ public class IConfig {
 
             getConfigFile().set("twitter.pkey", "somePublicKey");
             getConfigFile().set("twitter.skey", "somePrivateKey");
+            getConfigFile().set("twitter.useRedisBungee", false);
             getConfigFile().set("twitter.callback.state", false);
             getConfigFile().set("twitter.callback.url", "127.0.0.1:8000/link/?uuid=%uuid%");
             getConfigFile().set("twitter.callback.main-server", true);
@@ -76,6 +80,8 @@ public class IConfig {
     private void loadConfiguration() {
         publicKey = configFile.getString("twitter.pkey");
         privateKey = configFile.getString("twitter.skey");
+
+        redisBungee = configFile.getBoolean("twitter.useRedisBungee");
 
         callback = configFile.getBoolean("twitter.callback.state");
         callbackURL = configFile.getString("twitter.callback.url");

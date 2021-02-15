@@ -63,7 +63,10 @@ public class RedisBus {
         return jedisPool;
     }
 
-    public void publishPayload(String channel, Payload payload) {
+    public void publishPayload(String channel, Object payload) {
+
+        System.out.println("sent payload");
+
         try (Jedis jedis = jedisPool.getResource()) {
             jedis.publish(channel, gson.toJson(payload));
         }
