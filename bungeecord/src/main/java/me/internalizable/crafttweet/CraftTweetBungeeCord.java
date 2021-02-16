@@ -48,14 +48,16 @@ public final class CraftTweetBungeeCord extends Plugin {
         RunningQueueManager queueManager = null;
         RedisServerCache redisServerCache = null;
 
-        if(config.isCallback()) {
+        if(config.isCallback() || config.isRedisBungee()) {
             JedisPool jedisPool = new JedisPool(new JedisPoolConfig(), "localhost", 6379);
             RedisManager redisManager = new RedisManager(jedisPool);
 
             if(config.isRedisBungee()) {
                 redisServerCache = new RedisServerCache(redisManager);
 
-                redisManager.getRedisBus().registerListener(new OAuthReciever(config, redisServerCache, bungeeUtils));
+                if(config.isCallback())
+                    redisManager.getRedisBus().registerListener(new OAuthReciever(config, redisServerCache, bungeeUtils));
+
                 redisManager.getRedisBus().registerListener(new CacheHandler(this, config, localCache));
 
                 queueManager = new RunningQueueManager(config, redisServerCache);
@@ -73,19 +75,6 @@ public final class CraftTweetBungeeCord extends Plugin {
 
             redisManager.getRedisBus().init();
 
-        } else if(config.isRedisBungee()) {
-            JedisPool jedisPool = new JedisPool(new JedisPoolConfig(), "localhost", 6379);
-            RedisManager redisManager = new RedisManager(jedisPool);
-
-            redisServerCache = new RedisServerCache(redisManager);
-
-            redisManager.getRedisBus().registerListener(new CacheHandler(this, config, localCache));
-            redisManager.getRedisBus().init();
-
-            queueManager = new RunningQueueManager(config, redisServerCache);
-
-            getProxy().getPluginManager().registerListener(this, new CraftTweetJoin(redisServerCache, config));
-            getProxy().getPluginManager().registerCommand(this, new LinkCMD(this, config, redisServerCache));
         } else {
             queueManager = new RunningQueueManager(config, localCache);
             getProxy().getPluginManager().registerListener(this, new CraftTweetJoin(localCache, config));

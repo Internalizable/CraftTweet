@@ -26,14 +26,6 @@ public class CacheHandler {
 
     @RedisHandler("twitter-cache-handler")
     public void handleRequest(TwitterData twitterData) {
-
-        System.out.println(twitterData.getUUID());
-        System.out.println(twitterData.getOauth_p());
-        System.out.println(twitterData.getOauth_s());
-        System.out.println(twitterData.getLimitCount());
-        System.out.println(twitterData.getLatestTimestamp());
-        System.out.println(twitterData.isTwitter());
-
         TwitterPlayer waitingPlayer = localCache.getWaitingPlayer(twitterData.getUUID());
 
         TwitterPlayer twitterPlayer = new TwitterPlayer(twitterData.getUUID(), config, localCache);
@@ -51,12 +43,6 @@ public class CacheHandler {
         }
         else
             localCache.addWaitingPlayer(twitterPlayer);
-
-        System.out.println("Waiting Cache: ");
-        StaticUtils.getWaitingCache().forEach(s-> System.out.println(s.getData().getUUID()));
-
-        System.out.println("Active Cache: ");
-        StaticUtils.getCache().forEach(s-> System.out.println(s.getData().getUUID()));
     }
 
 }
