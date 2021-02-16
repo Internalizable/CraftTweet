@@ -47,8 +47,9 @@
     </build>
 
     <modules>
-        <module>crafttweet-common</module>
-        <module>crafttweet-spigot</module>
-        <module>crafttweet-bungeecord</module>
+        <module>CraftTweet-common</module>
+        <module>CraftTweet-spigot</module>
+        <module>CraftTweet-bungeecord</module>
+        <module>CraftTweet-velocity</module>
     </modules>
 </project>
