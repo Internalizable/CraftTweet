@@ -1,10 +1,15 @@
 package me.internalizable.crafttweet;
 
+import com.google.common.io.Files;
+import com.imaginarycode.minecraft.redisbungee.RedisBungee;
 import me.internalizable.crafttweet.api.redis.RedisManager;
 import me.internalizable.crafttweet.api.redis.handlers.auth.OAuthReciever;
-import me.internalizable.crafttweet.cache.LocalServerCache;
+import me.internalizable.crafttweet.cache.ITwitterCache;
 import me.internalizable.crafttweet.cmd.LinkCMD;
 import me.internalizable.crafttweet.config.IConfig;
+import me.internalizable.crafttweet.data.FlatDataStorage;
+import me.internalizable.crafttweet.data.IStorageData;
+import me.internalizable.crafttweet.data.MySQLStorage;
 import me.internalizable.crafttweet.events.CraftTweetJoin;
 import me.internalizable.crafttweet.queue.RunningQueueManager;
 import me.internalizable.crafttweet.queue.WaitingQueue;
@@ -16,9 +21,9 @@ import me.internalizable.crafttweet.utils.StaticUtils;
 import net.md_5.bungee.api.plugin.Plugin;
 import redis.clients.jedis.JedisPool;
 import redis.clients.jedis.JedisPoolConfig;
-import sun.misc.Cache;
 
-import java.sql.Time;
+import java.io.File;
+import java.io.IOException;
 import java.util.concurrent.TimeUnit;
 
 public final class CraftTweetBungeeCord extends Plugin {
@@ -39,53 +44,55 @@ public final class CraftTweetBungeeCord extends Plugin {
             System.out.println("Fatal OAuth error, please configure the file.");
         }
 
-        MySQL sqlInstance = new MySQL(config);
-        sqlInstance.init();
-
-        LocalServerCache localCache = new LocalServerCache();
+        ITwitterCache localCache = new ITwitterCache();
         BungeeUtils bungeeUtils = new BungeeUtils(this);
 
-        RunningQueueManager queueManager = null;
-        RedisServerCache redisServerCache = null;
+        IStorageData storageData;
+
+        if(config.isSQL()) {
+            storageData = new MySQLStorage();
+
+            MySQL sqlInstance = new MySQL(config);
+            sqlInstance.init();
+        } else {
+            storageData = new FlatDataStorage();
+
+            File jsonFile = new File(getDataFolder() + "/data.json");
+
+            try {
+                jsonFile.createNewFile();
+                StaticUtils.populateDataArray(getDataFolder() + "/data.json");
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+
 
         if(config.isCallback() || config.isRedisBungee()) {
             JedisPool jedisPool = new JedisPool(new JedisPoolConfig(), "localhost", 6379);
             RedisManager redisManager = new RedisManager(jedisPool);
 
             if(config.isRedisBungee()) {
-                redisServerCache = new RedisServerCache(redisManager);
+                localCache = new RedisServerCache(redisManager);
 
                 if(config.isCallback())
-                    redisManager.getRedisBus().registerListener(new OAuthReciever(config, redisServerCache, bungeeUtils));
+                    redisManager.getRedisBus().registerListener(new OAuthReciever(config, localCache, bungeeUtils));
 
-                redisManager.getRedisBus().registerListener(new CacheHandler(this, config, localCache));
-
-                queueManager = new RunningQueueManager(config, redisServerCache);
-
-                getProxy().getPluginManager().registerListener(this, new CraftTweetJoin(redisServerCache, config));
-                getProxy().getPluginManager().registerCommand(this, new LinkCMD(this, config, redisServerCache));
+                redisManager.getRedisBus().registerListener(new CacheHandler(this, config, localCache, storageData));
             } else {
                 redisManager.getRedisBus().registerListener(new OAuthReciever(config, localCache, bungeeUtils));
-
-                queueManager = new RunningQueueManager(config, localCache);
-
-                getProxy().getPluginManager().registerListener(this, new CraftTweetJoin(localCache, config));
-                getProxy().getPluginManager().registerCommand(this, new LinkCMD(this, config, localCache));
             }
 
             redisManager.getRedisBus().init();
-
-        } else {
-            queueManager = new RunningQueueManager(config, localCache);
-            getProxy().getPluginManager().registerListener(this, new CraftTweetJoin(localCache, config));
-            getProxy().getPluginManager().registerCommand(this, new LinkCMD(this, config, localCache));
         }
 
-
-        RedisServerCache finalRedisServerCache = redisServerCache;
-        RunningQueueManager finalQueueManager = queueManager;
+        RunningQueueManager queueManager = new RunningQueueManager(config, localCache);
+        getProxy().getPluginManager().registerListener(this, new CraftTweetJoin(localCache, config, storageData));
+        getProxy().getPluginManager().registerCommand(this, new LinkCMD(this, config, localCache, storageData));
 
         resetTime = (int) TimeUnit.HOURS.toSeconds(1);
+
+        ITwitterCache finalLocalCache = localCache;
 
         getProxy().getScheduler().schedule(this, () -> {
             resetTime--;
@@ -96,17 +103,14 @@ public final class CraftTweetBungeeCord extends Plugin {
 
                 WaitingQueue queueRuntime;
 
-                if(config.isRedisBungee())
-                    queueRuntime = new WaitingQueue(finalRedisServerCache);
-                else
-                    queueRuntime = new WaitingQueue(localCache);
+                queueRuntime = new WaitingQueue(finalLocalCache);
 
                 queueRuntime.moveQueue();
             }
 
             if(!StaticUtils.isUpdating()) {
-                localCache.setUpdateStatus(true);
-                finalQueueManager.readQueue();
+                finalLocalCache.setUpdateStatus(true);
+                queueManager.readQueue();
             }
 
         },0L, 1L, TimeUnit.SECONDS);

@@ -6,6 +6,7 @@ import me.internalizable.crafttweet.api.TwitterAPI;
 import me.internalizable.crafttweet.cache.ITwitterCache;
 import me.internalizable.crafttweet.config.IConfig;
 import me.internalizable.crafttweet.config.TwitterMessages;
+import me.internalizable.crafttweet.data.IStorageData;
 import me.internalizable.crafttweet.player.TwitterPlayer;
 import me.internalizable.crafttweet.redis.RedisServerCache;
 import me.internalizable.crafttweet.utils.StaticUtils;
@@ -25,11 +26,14 @@ public class LinkCMD extends Command {
     private IConfig config;
     private ITwitterCache twitterCache;
 
-    public LinkCMD(CraftTweetBungeeCord instance, IConfig config, ITwitterCache twitterCache) {
+    private IStorageData storageData;
+
+    public LinkCMD(CraftTweetBungeeCord instance, IConfig config, ITwitterCache twitterCache, IStorageData storageData) {
         super("link");
         this.instance = instance;
         this.config = config;
         this.twitterCache = twitterCache;
+        this.storageData = storageData;
     }
 
     @Override
@@ -46,10 +50,7 @@ public class LinkCMD extends Command {
             if(args.length == 0) {
                 TwitterPlayer searchedPlayer = twitterCache.getActivePlayer(player.getUniqueId());
 
-                System.out.println("Command used");
-
                 if(searchedPlayer != null) {
-                    System.out.println("not null player");
 
                     TwitterAPI twitterAPI = new TwitterAPI(searchedPlayer, config, twitterCache);
 
@@ -77,7 +78,7 @@ public class LinkCMD extends Command {
                         return;
                     }
 
-                    TwitterPlayer requestPlayer = new TwitterPlayer(player.getUniqueId(), config, twitterCache);
+                    TwitterPlayer requestPlayer = new TwitterPlayer(player.getUniqueId(), config, twitterCache, storageData);
                     TwitterAPI twitterAPI = new TwitterAPI(requestPlayer, config, twitterCache);
 
                     twitterAPI.getAuthenticationURL().thenAccept(url -> {

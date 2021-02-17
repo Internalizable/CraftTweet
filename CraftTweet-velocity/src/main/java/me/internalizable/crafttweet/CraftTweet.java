@@ -9,7 +9,7 @@ import org.slf4j.Logger;
 @Plugin(
         id = "CraftTweet",
         name = "CraftTweet",
-        version = "1.0-SNAPSHOT",
+        version = "1.2-SNAPSHOT",
         description = "Links your twitter account with your minecraft account"
 )
 public class CraftTweet {

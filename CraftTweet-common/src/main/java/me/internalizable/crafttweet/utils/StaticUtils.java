@@ -1,12 +1,20 @@
 package me.internalizable.crafttweet.utils;
 
+import com.google.gson.Gson;
+import com.google.gson.reflect.TypeToken;
+import com.google.gson.stream.JsonReader;
 import lombok.Getter;
 import lombok.Setter;
 import me.internalizable.crafttweet.cache.ITwitterCache;
+import me.internalizable.crafttweet.player.TwitterData;
 import me.internalizable.crafttweet.player.TwitterPlayer;
 import me.internalizable.crafttweet.queue.QueuedTweet;
 import twitter4j.RateLimitStatus;
 
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileReader;
+import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
@@ -23,6 +31,11 @@ public class StaticUtils {
     @Getter
     private static LinkedList<QueuedTweet> runningQueue = new LinkedList<>();
 
+    private static final Type DATA_TYPE = new TypeToken<List<TwitterData>>() {}.getType();
+
+    @Getter
+    private static List<TwitterData> flatData = new ArrayList<>();
+
     @Getter @Setter
     private static boolean isUpdating = false;
 
@@ -32,6 +45,22 @@ public class StaticUtils {
                                                 .tweetToQueue(tweet).build();
 
         runningQueue.add(queuedTweet);
+    }
+
+    public static void populateDataArray(String path) {
+        Gson gson = new Gson();
+
+        JsonReader reader = null;
+        try {
+            reader = new JsonReader(new FileReader(path));
+            flatData = gson.fromJson(reader, DATA_TYPE);
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public static void saveDataArray() {
+
     }
 
     public static int handleRateLimit(RateLimitStatus rateLimitStatus) {

@@ -1,7 +1,5 @@
 package me.internalizable.crafttweet.cache;
 
-import lombok.Getter;
-import lombok.Setter;
 import me.internalizable.crafttweet.player.TwitterPlayer;
 import me.internalizable.crafttweet.queue.QueuedTweet;
 import me.internalizable.crafttweet.utils.StaticUtils;
@@ -9,7 +7,7 @@ import me.internalizable.crafttweet.utils.StaticUtils;
 import java.sql.Timestamp;
 import java.util.*;
 
-public abstract class ITwitterCache {
+public class ITwitterCache {
 
     public TwitterPlayer getActivePlayer(UUID id) {
         return StaticUtils.getCache().stream().filter(player -> player.getData().getUUID().equals(id)).findAny().orElse(null);
@@ -41,15 +39,23 @@ public abstract class ITwitterCache {
         StaticUtils.setUpdating(updateStatus);
     }
 
-    /**
-     * Must be synced with Redis servers.
-     * @param twitterPlayer
-     * @param timestamp
-     */
+    public void addTimestamp(TwitterPlayer twitterPlayer, Timestamp timestamp) {
+        twitterPlayer.getData().setLatestTimestamp(timestamp);
+    }
 
-    public abstract void addTimestamp(TwitterPlayer twitterPlayer, Timestamp timestamp);
-    public abstract void addWaitingPlayer(TwitterPlayer twitterPlayer);
-    public abstract void addActivePlayer(TwitterPlayer twitterPlayer);
-    public abstract void addToLimitCount(TwitterPlayer twitterPlayer, int incrementCount);
+    public void addWaitingPlayer(TwitterPlayer twitterPlayer) {
+        StaticUtils.getWaitingCache().stream().filter(player -> player.getData().getUUID().equals(twitterPlayer.getData().getUUID())).findAny().ifPresent(StaticUtils.getWaitingCache()::remove);
+        StaticUtils.getWaitingCache().add(twitterPlayer);
+    }
+
+    public void addActivePlayer(TwitterPlayer twitterPlayer) {
+        StaticUtils.getWaitingCache().stream().filter(player -> player.getData().getUUID().equals(twitterPlayer.getData().getUUID())).findAny().ifPresent(StaticUtils.getWaitingCache()::remove);
+        StaticUtils.getCache().stream().filter(player -> player.getData().getUUID().equals(twitterPlayer.getData().getUUID())).findAny().ifPresent(StaticUtils.getCache()::remove);
+        StaticUtils.getCache().add(twitterPlayer);
+    }
+
+    public void addToLimitCount(TwitterPlayer twitterPlayer, int incrementCount) {
+        twitterPlayer.getData().setLimitCount(twitterPlayer.getData().getLimitCount() + incrementCount);
+    }
 
 }

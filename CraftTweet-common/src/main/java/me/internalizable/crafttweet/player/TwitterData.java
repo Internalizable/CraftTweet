@@ -30,4 +30,6 @@ public class TwitterData {
     private String token_public;
 
     private String token_secret;
+
+    private String requestingServerUpdate;
 }

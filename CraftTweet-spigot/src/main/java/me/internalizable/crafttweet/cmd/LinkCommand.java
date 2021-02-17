@@ -6,8 +6,8 @@ import me.internalizable.crafttweet.api.TwitterAPI;
 import me.internalizable.crafttweet.cache.ITwitterCache;
 import me.internalizable.crafttweet.config.IConfig;
 import me.internalizable.crafttweet.config.TwitterMessages;
+import me.internalizable.crafttweet.data.IStorageData;
 import me.internalizable.crafttweet.player.TwitterPlayer;
-import me.internalizable.crafttweet.queue.WaitingQueue;
 import me.internalizable.crafttweet.utils.StaticUtils;
 import org.bukkit.Bukkit;
 import org.bukkit.command.Command;
@@ -20,11 +20,13 @@ public class LinkCommand implements CommandExecutor {
     private CraftTweetSpigot instance;
     private IConfig config;
     private ITwitterCache twitterCache;
+    private IStorageData storageData;
 
-    public LinkCommand(CraftTweetSpigot instance, IConfig config, ITwitterCache twitterCache) {
+    public LinkCommand(CraftTweetSpigot instance, IConfig config, ITwitterCache twitterCache, IStorageData storageData) {
         this.instance = instance;
         this.config = config;
         this.twitterCache = twitterCache;
+        this.storageData = storageData;
     }
 
     @Override
@@ -69,7 +71,7 @@ public class LinkCommand implements CommandExecutor {
                         return true;
                     }
 
-                    TwitterPlayer requestPlayer = new TwitterPlayer(player.getUniqueId(), config, twitterCache);
+                    TwitterPlayer requestPlayer = new TwitterPlayer(player.getUniqueId(), config, twitterCache, storageData);
                     TwitterAPI twitterAPI = new TwitterAPI(requestPlayer, config, twitterCache);
 
                     twitterAPI.getAuthenticationURL().thenAccept(url -> {

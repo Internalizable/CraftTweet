@@ -4,6 +4,7 @@ import lombok.Getter;
 import lombok.Setter;
 import me.internalizable.crafttweet.cache.ITwitterCache;
 import me.internalizable.crafttweet.config.IConfig;
+import me.internalizable.crafttweet.data.IStorageData;
 import me.internalizable.crafttweet.sql.MySQL;
 import me.internalizable.crafttweet.sql.prep.PredefinedStmts;
 import twitter4j.Twitter;
@@ -24,13 +25,14 @@ public class TwitterPlayer {
     private TwitterData data;
 
     private ITwitterCache twitterCache;
+    private IStorageData storageData;
 
     private TwitterFactory twitterFactory;
 
     @Getter @Setter
     private Twitter twitterClient;
 
-    public TwitterPlayer(UUID uuid, IConfig config, ITwitterCache twitterCache) {
+    public TwitterPlayer(UUID uuid, IConfig config, ITwitterCache twitterCache, IStorageData storageData) {
         this.twitterCache = twitterCache;
 
         data = TwitterData.builder()
@@ -40,6 +42,7 @@ public class TwitterPlayer {
                 .twitter(false)
                 .limitCount(0)
                 .latestTimestamp(new Timestamp(System.currentTimeMillis()))
+                .requestingServerUpdate("")
                 .build();
 
         twitterFactory = new TwitterFactory();
@@ -48,75 +51,9 @@ public class TwitterPlayer {
     }
 
     public void init() {
-        PredefinedStmts selectionStmt = PredefinedStmts.SELECTION;
-        selectionStmt.registerPlaceholder("%uuid%", data.getUUID().toString());
-
-        CompletableFuture.runAsync(() -> {
-            try {
-                PreparedStatement pst = MySQL.getDs().getConnection().prepareStatement(selectionStmt.getStatement());
-                ResultSet rs = pst.executeQuery();
-
-                while(rs.next()) {
-                    data.setOauth_p(rs.getString("oauthp"));
-                    data.setOauth_s(rs.getString("oauths"));
-
-                    data.setTwitter(true);
-                    twitterClient.setOAuthAccessToken(new AccessToken(rs.getString("oauthp"), rs.getString("oauths")));
-
-                    twitterCache.addActivePlayer(this);
-
-                    System.out.println("Added to cache");
-                }
-
-            } catch (SQLException exception) {
-                exception.printStackTrace();
-            }
-        });
+        storageData.readPlayer(this, twitterClient, twitterCache);
     }
 
-    public void insertPlayer(String oauthp, String oauths) {
-        PredefinedStmts insertionStmt = PredefinedStmts.INSERTION;
-        insertionStmt.registerPlaceholder("%uuid%", data.getUUID().toString());
-        insertionStmt.registerPlaceholder("%oauthp%", oauthp);
-        insertionStmt.registerPlaceholder("%oauths%", oauths);
-
-        CompletableFuture.runAsync(() -> {
-            try {
-                PreparedStatement pst = MySQL.getDs().getConnection().prepareStatement(insertionStmt.getStatement());
-                pst.executeUpdate();
-
-                data.setOauth_p(oauthp);
-                data.setOauth_s(oauths);
-                data.setTwitter(true);
-
-                twitterClient.setOAuthAccessToken(new AccessToken(oauthp, oauths));
-
-                twitterCache.addActivePlayer(this);
-            } catch (SQLException exception) {
-                exception.printStackTrace();
-            }
-        });
-
-    }
-
-    public void deletePlayer() {
-        PredefinedStmts deletionStmt = PredefinedStmts.DELETION;
-        deletionStmt.registerPlaceholder("%uuid%", data.getUUID().toString());
-
-        CompletableFuture.runAsync(() -> {
-            try {
-                PreparedStatement pst = MySQL.getDs().getConnection().prepareStatement(deletionStmt.getStatement());
-                pst.executeUpdate();
-
-                data.setOauth_p("");
-                data.setOauth_s("");
-                data.setTwitter(false);
-
-                twitterClient = null;
-            } catch (SQLException exception) {
-                exception.printStackTrace();
-            }
-        });
-    }
+    public void insertPlayer(String oauthp, String oauths) { storageData.insertPlayer(twitterClient, twitterCache, this, oauthp, oauths); }
 
 }

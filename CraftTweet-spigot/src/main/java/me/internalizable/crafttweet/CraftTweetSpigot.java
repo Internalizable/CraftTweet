@@ -2,9 +2,12 @@ package me.internalizable.crafttweet;
 
 import me.internalizable.crafttweet.api.redis.RedisManager;
 import me.internalizable.crafttweet.api.redis.handlers.auth.OAuthReciever;
-import me.internalizable.crafttweet.cache.LocalServerCache;
+import me.internalizable.crafttweet.cache.ITwitterCache;
 import me.internalizable.crafttweet.cmd.LinkCommand;
 import me.internalizable.crafttweet.config.IConfig;
+import me.internalizable.crafttweet.data.FlatDataStorage;
+import me.internalizable.crafttweet.data.IStorageData;
+import me.internalizable.crafttweet.data.MySQLStorage;
 import me.internalizable.crafttweet.events.CraftTweetJoin;
 import me.internalizable.crafttweet.queue.RunningQueueManager;
 import me.internalizable.crafttweet.queue.WaitingQueue;
@@ -16,6 +19,8 @@ import org.bukkit.plugin.java.JavaPlugin;
 import redis.clients.jedis.JedisPool;
 import redis.clients.jedis.JedisPoolConfig;
 
+import java.io.File;
+import java.io.IOException;
 import java.util.concurrent.TimeUnit;
 
 public final class CraftTweetSpigot extends JavaPlugin {
@@ -37,15 +42,32 @@ public final class CraftTweetSpigot extends JavaPlugin {
             Bukkit.getPluginManager().disablePlugin(this);
         }
 
-        MySQL sqlInstance = new MySQL(config);
-        sqlInstance.init();
-
-        LocalServerCache twitterCache = new LocalServerCache();
+        ITwitterCache twitterCache = new ITwitterCache();
         BukkitUtils bukkitUtils = new BukkitUtils();
 
-        Bukkit.getPluginManager().registerEvents(new CraftTweetJoin(this, config, twitterCache), this);
+        IStorageData storageData;
 
-        getCommand("link").setExecutor(new LinkCommand(this, config, twitterCache));
+        if(config.isSQL()) {
+            storageData = new MySQLStorage();
+
+            MySQL sqlInstance = new MySQL(config);
+            sqlInstance.init();
+        } else {
+            storageData = new FlatDataStorage();
+
+            File jsonFile = new File(getDataFolder() + "/data.json");
+
+            try {
+                jsonFile.createNewFile();
+                StaticUtils.populateDataArray(getDataFolder() + "/data.json");
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+
+        Bukkit.getPluginManager().registerEvents(new CraftTweetJoin(this, config, twitterCache, storageData), this);
+
+        getCommand("link").setExecutor(new LinkCommand(this, config, twitterCache, storageData));
 
         resetTime = (int) TimeUnit.HOURS.toSeconds(1);
 
