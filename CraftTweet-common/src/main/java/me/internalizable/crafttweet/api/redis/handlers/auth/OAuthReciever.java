@@ -4,6 +4,7 @@ import me.internalizable.crafttweet.api.redis.bus.annotation.RedisHandler;
 import me.internalizable.crafttweet.cache.ITwitterCache;
 import me.internalizable.crafttweet.config.IConfig;
 import me.internalizable.crafttweet.config.TwitterMessages;
+import me.internalizable.crafttweet.data.IStorageData;
 import me.internalizable.crafttweet.player.TwitterPlayer;
 import me.internalizable.crafttweet.utils.IUtils;
 import twitter4j.auth.AccessToken;
@@ -17,10 +18,13 @@ public class OAuthReciever {
     private ITwitterCache twitterCache;
     private IUtils utils;
 
-    public OAuthReciever(IConfig iConfig, ITwitterCache twitterCache, IUtils iUtils) {
+    private IStorageData storageData;
+
+    public OAuthReciever(IConfig iConfig, ITwitterCache twitterCache, IUtils iUtils, IStorageData storageData) {
         this.config = iConfig;
         this.twitterCache = twitterCache;
         this.utils = iUtils;
+        this.storageData = storageData;
     }
 
     @RedisHandler("twitter-oauth-callback")
@@ -29,7 +33,7 @@ public class OAuthReciever {
 
         if(twitterPlayer != null && config.isCallbackServer()) {
             CompletableFuture.runAsync(() -> {
-                TwitterPlayer newPlayer = new TwitterPlayer(recievedRequest.getUuid(), config, twitterCache);
+                TwitterPlayer newPlayer = new TwitterPlayer(recievedRequest.getUuid(), config, twitterCache, storageData);
                 newPlayer.getTwitterClient().setOAuthAccessToken(new AccessToken(recievedRequest.getOauth_token(), recievedRequest.getOauth_token_secret()));
                 newPlayer.insertPlayer(recievedRequest.getOauth_token(), recievedRequest.getOauth_token_secret());
 

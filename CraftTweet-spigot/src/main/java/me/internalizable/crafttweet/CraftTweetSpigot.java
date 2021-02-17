@@ -27,9 +27,11 @@ public final class CraftTweetSpigot extends JavaPlugin {
 
     private int resetTime;
 
+    private IConfig config;
+
     @Override
     public void onEnable() {
-        IConfig config = new IConfig();
+        config = new IConfig();
 
         try {
             config.init(getDataFolder());
@@ -96,7 +98,7 @@ public final class CraftTweetSpigot extends JavaPlugin {
             JedisPool jedisPool = new JedisPool(new JedisPoolConfig(), "localhost", 6379);
 
             RedisManager redisManager = new RedisManager(jedisPool);
-            redisManager.getRedisBus().registerListener(new OAuthReciever(config, twitterCache, bukkitUtils));
+            redisManager.getRedisBus().registerListener(new OAuthReciever(config, twitterCache, bukkitUtils, storageData));
             redisManager.getRedisBus().init();
         }
 
@@ -104,7 +106,8 @@ public final class CraftTweetSpigot extends JavaPlugin {
 
     @Override
     public void onDisable() {
-        // Plugin shutdown logic
+        if(!config.isSQL())
+            StaticUtils.saveDataArray();
     }
 
 }

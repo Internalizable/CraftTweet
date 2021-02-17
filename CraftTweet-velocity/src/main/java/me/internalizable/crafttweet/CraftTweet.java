@@ -7,7 +7,7 @@ import com.velocitypowered.api.plugin.Plugin;
 import org.slf4j.Logger;
 
 @Plugin(
-        id = "CraftTweet",
+        id = "craft-tweet",
         name = "CraftTweet",
         version = "1.2-SNAPSHOT",
         description = "Links your twitter account with your minecraft account"

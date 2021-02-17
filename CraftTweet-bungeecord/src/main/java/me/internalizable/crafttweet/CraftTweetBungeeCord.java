@@ -30,9 +30,11 @@ public final class CraftTweetBungeeCord extends Plugin {
 
     private int resetTime;
 
+    private IConfig config;
+
     @Override
     public void onEnable() {
-        IConfig config = new IConfig();
+        config = new IConfig();
 
         try {
             config.init(getDataFolder());
@@ -76,11 +78,11 @@ public final class CraftTweetBungeeCord extends Plugin {
                 localCache = new RedisServerCache(redisManager);
 
                 if(config.isCallback())
-                    redisManager.getRedisBus().registerListener(new OAuthReciever(config, localCache, bungeeUtils));
+                    redisManager.getRedisBus().registerListener(new OAuthReciever(config, localCache, bungeeUtils, storageData));
 
                 redisManager.getRedisBus().registerListener(new CacheHandler(this, config, localCache, storageData));
             } else {
-                redisManager.getRedisBus().registerListener(new OAuthReciever(config, localCache, bungeeUtils));
+                redisManager.getRedisBus().registerListener(new OAuthReciever(config, localCache, bungeeUtils, storageData));
             }
 
             redisManager.getRedisBus().init();
@@ -119,6 +121,7 @@ public final class CraftTweetBungeeCord extends Plugin {
 
     @Override
     public void onDisable() {
-        // Plugin shutdown logic
+        if(!config.isSQL())
+            StaticUtils.saveDataArray();
     }
 }
