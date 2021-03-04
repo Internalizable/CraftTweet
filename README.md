@@ -94,7 +94,7 @@ Additionally, this command can ONLY be executed by console.
 
 ## For Developers
 CraftTweet has it's own API based on CompletableFutures and it's own queuing system. 
-Take a look at [TwitterAPI](https://github.com/Internalizable/CraftTweet/blob/master/src/main/java/me/internalizable/crafttweet/crafttweet-common/api/TwitterAPI.java)'s github page based on CompletableFutures.
+Take a look at [TwitterAPI](https://github.com/Internalizable/CraftTweet/blob/master/CraftTweet-common/src/main/java/me/internalizable/crafttweet/api/TwitterAPI.java)'s github page based on CompletableFutures.
 
 ## Feedback
 If you encounter any errors or issues, or have any feedback please do so by either sending me a direct message or replying to this resource's thread.
