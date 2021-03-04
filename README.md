@@ -22,11 +22,15 @@ CraftTweet authenticates users based on Twitter's OAuth. You'd have to apply for
 ## Installation
 First, apply for a developer account using your network's twitter page. After applying for your developer account and gaining access to build applications, head over to your twitter's [developer dashboard]('https://developer.twitter.com/en/portal/dashboard').
 
-[ATTACH=full]593513[/ATTACH]
+<p align="center">
+  <img src="https://i.imgur.com/diYOZoH.png" alt="Twitter Developer Application"/>
+</p>
 
 Go to your Projects tab, and click Create App under the Standalone apps. Then, configure your app's information and save your API key and API secret key since they will be used in the configuration file (do not share those with anyone!). Assign permissions based on your needs (in most instances it's only Read + Write).
 
-[ATTACH=full]593514[/ATTACH]
+<p align="center">
+  <img src="https://i.imgur.com/SNqoHHa.png" alt="Twitter Developer Permission"/>
+</p>
 
 Drop CraftTweet.jar into your plugins folder and start your server.
 
